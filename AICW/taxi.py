@@ -54,7 +54,8 @@ class Taxi:
          start_point - this gives the location in the network where the taxi will start. It should be an (x,y) tuple.
          default is None which means the world will randomly place the Taxi somewhere on the edge of the service area.
       '''
-      def __init__(self, world, taxi_num, idle_loss=256, max_wait=50, on_duty_time=0, off_duty_time=0, service_area=None, start_point=None):
+      #Changed off_duty_time from 0 to 120 so that taxis return to service after 2 hours instead of never returning
+      def __init__(self, world, taxi_num, idle_loss=256, max_wait=50, on_duty_time=0, off_duty_time=120, service_area=None, start_point=None):
 
           self._world = world
           self.number = taxi_num
@@ -99,7 +100,7 @@ class Taxi:
           # explicitly that their bid has not been successful. The dictionary is indexed by 
           # a tuple of (time, originx, originy) to be unique, and the expiry can be implemented using a heap queue
           # for priority management. You would do this by initialising a self._fareQ object as:
-          # self._fareQ = heapq.heapify(self._fares.keys()) (once you have some fares to consider)
+          # self._fareQ = heapq.heapify(self._fares.keys()) (once you have some fares to consider)!!!!!!!!!!!!!!!!!!!!
 
           # the dictionary items, meanwhile, contain a FareInfo object with the price, the destination, and whether 
           # or not this taxi has been allocated the fare (and thus should proceed to collect them ASAP from the origin)
