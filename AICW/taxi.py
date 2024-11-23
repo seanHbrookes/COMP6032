@@ -372,6 +372,39 @@ class Taxi:
          return abs(node[0] - destination[0]) + abs(node[1] - destination[1])
          return None
 
+
+      def _planPath2(self, origin, destination, **args):
+               # the list of explored paths. Recursive invocations pass in explored as a parameter
+               if 'explored' not in args:
+                  args['explored'] = {}
+               # add this origin to the explored list
+               # explored is a dict purely so we can hash its index for fast lookup, so its value doesn't matter
+               args['explored'][origin] = None 
+               # the actual path we are going to generate
+               path = [origin]
+               # take the next node in the frontier, and expand it depth-wise               
+               if origin in self._map:
+                  # the frontier of unexplored paths (from this Node
+                  frontier = [node for node in self._map[origin].keys() if node not in args['explored']]
+                  # recurse down to the next node. This will automatically create a depth-first
+                  # approach because the recursion won't bottom out until no more frontier nodes
+                  # can be generated 
+                  for nextNode in frontier:
+                     path = path + self._planPath(nextNode, destination, explored=args['explored'])
+                     # stop early as soon as the destination has been found by any route.
+                     if destination in path:
+                        # validate path
+                        if len(path) > 1:
+                           try:
+                                 # use a generator expression to find any invalid nodes in the path
+                                 badNode = next(pnode for pnode in path[1:] if pnode not in self._map[path[path.index(pnode)-1]].keys())
+                                 raise IndexError("Invalid path: no route from ({0},{1}) to ({2},{3} in map".format(self._map[path.index(pnode)-1][0], self._map[path.index(pnode)-1][1], pnode[0], pnode[1]))
+                           except StopIteration:
+                                 pass
+                        return path
+               # didn't reach the destination from any reachable node
+               # no need, therefore, to expand the path for the higher-level call, this is a dead end.
+               return [] 
       
       def _planPath3(self, origin, destination, heuristic=None, **args):
          if 'explored' not in args:
@@ -417,41 +450,6 @@ class Taxi:
 
          return None
 
-
-
-
-      def _planPath2(self, origin, destination, **args):
-          # the list of explored paths. Recursive invocations pass in explored as a parameter
-          if 'explored' not in args:
-             args['explored'] = {}
-          # add this origin to the explored list
-          # explored is a dict purely so we can hash its index for fast lookup, so its value doesn't matter
-          args['explored'][origin] = None 
-          # the actual path we are going to generate
-          path = [origin]
-          # take the next node in the frontier, and expand it depth-wise               
-          if origin in self._map:
-             # the frontier of unexplored paths (from this Node
-             frontier = [node for node in self._map[origin].keys() if node not in args['explored']]
-             # recurse down to the next node. This will automatically create a depth-first
-             # approach because the recursion won't bottom out until no more frontier nodes
-             # can be generated 
-             for nextNode in frontier:
-                 path = path + self._planPath(nextNode, destination, explored=args['explored'])
-                 # stop early as soon as the destination has been found by any route.
-                 if destination in path:
-                    # validate path
-                    if len(path) > 1:
-                       try:
-                           # use a generator expression to find any invalid nodes in the path
-                           badNode = next(pnode for pnode in path[1:] if pnode not in self._map[path[path.index(pnode)-1]].keys())
-                           raise IndexError("Invalid path: no route from ({0},{1}) to ({2},{3} in map".format(self._map[path.index(pnode)-1][0], self._map[path.index(pnode)-1][1], pnode[0], pnode[1]))
-                       except StopIteration:
-                           pass
-                    return path
-          # didn't reach the destination from any reachable node
-          # no need, therefore, to expand the path for the higher-level call, this is a dead end.
-          return [] 
                 
       # TODO
       # this function decides whether to offer a bid for a fare. In general you can consider your current position, time,

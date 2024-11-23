@@ -211,7 +211,7 @@ class Dispatcher:
       def _allocateFare(self, origin, destination, time):
            # a very simple approach here gives taxis at most 5 ticks to respond, which can
            # surely be improved upon.
-          if self._parent.simTime-time > 5:
+          if self._parent.simTime-time > 10:
              allocatedTaxi = -1
              winnerNode = None
              fareNode = self._parent.getNode(origin[0],origin[1])
@@ -222,20 +222,21 @@ class Dispatcher:
              # 4) that at least one valid taxi has actually bid on the fare
              if fareNode is not None:
                 for taxiIdx in self._fareBoard[origin][destination][time].bidders:
-                    if len(self._taxis) > taxiIdx:
-                       bidderLoc = self._taxis[taxiIdx].currentLocation
-                       bidderNode = self._parent.getNode(bidderLoc[0],bidderLoc[1])
-                       if bidderNode is not None:
-                          # ultimately the naive algorithm chosen is which taxi is the closest. This is patently unfair for several
-                          # reasons, but does produce *a* winner.
-                          if winnerNode is None or self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode):
-                             allocatedTaxi = taxiIdx
-                             winnerNode = bidderNode
-                          else:
-                             # and after all that, we still have to check that somebody won, because any of the other reasons to invalidate
-                             # the auction may have occurred.
-                             if allocatedTaxi >= 0:
-                                # but if so, allocate the taxi.
-                                self._fareBoard[origin][destination][time].taxi = allocatedTaxi     
-                                self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
+                    if self._taxis[taxiIdx]._passenger == None:
+                     if len(self._taxis) > taxiIdx:
+                        bidderLoc = self._taxis[taxiIdx].currentLocation
+                        bidderNode = self._parent.getNode(bidderLoc[0],bidderLoc[1])
+                        if bidderNode is not None:
+                           # ultimately the naive algorithm chosen is which taxi is the closest. This is patently unfair for several
+                           # reasons, but does produce *a* winner.
+                           if winnerNode is None or self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode):
+                              allocatedTaxi = taxiIdx
+                              winnerNode = bidderNode
+                           else:
+                              # and after all that, we still have to check that somebody won, because any of the other reasons to invalidate
+                              # the auction may have occurred.
+                              if allocatedTaxi >= 0:
+                                 # but if so, allocate the taxi.
+                                 self._fareBoard[origin][destination][time].taxi = allocatedTaxi     
+                                 self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
 
