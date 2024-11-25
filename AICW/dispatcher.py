@@ -207,7 +207,14 @@ class Dispatcher:
       # action. You should be able to do better than this. After balancing allocations, try to optimise which
       # fares are allocated to which taxi (or indeed to any taxi at all!)
 
-   
+
+
+      #Check the distance between taxi and fare and distance between fare and dropoff
+      #check if taxi is free and on duty
+      #check if the time to get there is is longer than the max wawit for a fare
+      #check if the taxi has enough money to make it
+      #make a score based on time for each taxi in loop that qualifies
+      #quickest one gets the fare
       def _allocateFare(self, origin, destination, time):
            # a very simple approach here gives taxis at most 5 ticks to respond, which can
            # surely be improved upon.
