@@ -215,7 +215,7 @@ class Dispatcher:
       #check if the taxi has enough money to make it
       #make a score based on time for each taxi in loop that qualifies
       #quickest one gets the fare
-      def _allocateFare(self, origin, destination, time):
+      def _allocateFare2(self, origin, destination, time):
            # a very simple approach here gives taxis at most 5 ticks to respond, which can
            # surely be improved upon.
           if self._parent.simTime-time > 10:
@@ -246,4 +246,31 @@ class Dispatcher:
                                  # but if so, allocate the taxi.
                                  self._fareBoard[origin][destination][time].taxi = allocatedTaxi     
                                  self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
+      
 
+      def _allocateFare(self, origin, destination, time):
+         bestTaxi = None
+         bestScore = float('inf')
+         fareNode = self._parent.getNode(origin[0],origin[1])
+
+         if fareNode is not None:
+            for taxiId in self._fareBoard[origin][destination][time].bidders:
+               if not self._taxis[taxiId].onDuty or self._taxis[taxiId]._passenger is not None:
+                  continue
+
+               timeToFare = self._parent.travelTime(self._taxis[taxiId].currentLocation, origin)
+               timeToDestination = self._parent.travelTime(origin, destination)
+
+               if timeToFare > self._taxis[taxiId].maxFareWait or self._taxis[taxiId]._account < timeToDestination:
+                  continue
+
+               score = timeToDestination + timeToFare
+               #potentially add other weighinghs to the score
+
+               if score < bestScore:
+                  bestTaxi = taxiId
+                  bestScore = score
+
+               if bestTaxi:
+                  self._fareBoard[origin][destination][time].taxi = bestTaxi
+                  self._parent.allocateFare(origin,self._taxis[bestTaxi])
