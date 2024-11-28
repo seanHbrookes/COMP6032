@@ -21,7 +21,7 @@ worldY = 50
 runTime = 500
 # you can change the DisplaySize to be bigger if you want larger-size objects on-screen
 displaySize = (1024,768)
-trafficOn = False
+trafficOn = True
 
 # play around with these parameters if you want, to see how they affect the results.
 # (but keep the original settings so you can return to something more-or-less 'sensible)
@@ -158,10 +158,10 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
 
    # create some taxis
    print("Creating taxis")
-   taxi0 = taxi.Taxi(world=svcArea,taxi_num=100,service_area=svcMap,start_point=(20,0))
+   taxi0 = taxi.Taxi(world=svcArea,taxi_num=100,service_area=svcMap,start_point=(0,0))
    taxi1 = taxi.Taxi(world=svcArea,taxi_num=101,service_area=svcMap,start_point=(49,15))
    taxi2 = taxi.Taxi(world=svcArea,taxi_num=102,service_area=svcMap,start_point=(15,49))
-   taxi3 = taxi.Taxi(world=svcArea,taxi_num=103,service_area=svcMap,start_point=(0,35))
+   taxi3 = taxi.Taxi(world=svcArea,taxi_num=103,service_area=svcMap,start_point=(0,49))
 
    global taxis 
    taxis = [taxi0,taxi1,taxi2,taxi3]
@@ -195,7 +195,7 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
                   taxiTimes[i] = threadTime
                   #print(taxiTimes[i])
                   
-            time.sleep(0.01)
+            time.sleep(1)
    if threadTime == runTime:
        totalRev = 0
        dispatchRev = dispatcher0.getTotalRev()

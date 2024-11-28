@@ -366,6 +366,7 @@ class Taxi:
                   # put neighbour into  unexplored
                   fScore = weighedGScore + self._heuristic(neighbour, destination)
                   heapq.heappush(unexplored, (fScore, neighbour))
+
          return []
 
       def _heuristic(self, node, destination):
@@ -458,24 +459,61 @@ class Taxi:
       # a hint that maybe some form of CSP solver with automated reasoning might be a good way of implementing this. But
       # other methodologies could work well. For best results you will almost certainly need to use probabilistic reasoning.
       def _bidOnFare(self, time, origin, destination, price):
-          NoCurrentPassengers = self._passenger is None
-          NoAllocatedFares = len([fare for fare in self._availableFares.values() if fare.allocated]) == 0
-          TimeToOrigin = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
-          TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
-                                                     self._world.getNode(destination[1], destination[1]))
-          FiniteTimeToOrigin = TimeToOrigin > 0
-          FiniteTimeToDestination = TimeToDestination > 0
-          CanAffordToDrive = self._account > TimeToOrigin
-          FairPriceToDestination = price > TimeToDestination
-          PriceBetterThanCost = FairPriceToDestination and FiniteTimeToDestination
-          FareExpiryInFuture = self._maxFareWait > self._world.simTime-time
-          EnoughTimeToReachFare = self._maxFareWait-self._world.simTime+time > TimeToOrigin
-          SufficientDrivingTime = FiniteTimeToOrigin and EnoughTimeToReachFare 
-          WillArriveOnTime = FareExpiryInFuture and SufficientDrivingTime
-          NotCurrentlyBooked = NoCurrentPassengers and NoAllocatedFares
-          CloseEnough = CanAffordToDrive and WillArriveOnTime
-          Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
-          Bid = CloseEnough and Worthwhile
-          return Bid
+         NoCurrentPassengers = self._passenger is None
+         NoAllocatedFares = len([fare for fare in self._availableFares.values() if fare.allocated]) == 0
+         TimeToOrigin = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
+         TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
+                                                      self._world.getNode(destination[0], destination[1]))
+         FiniteTimeToOrigin = TimeToOrigin > 0
+         FiniteTimeToDestination = TimeToDestination > 0
+         CanAffordToDrive = self._account > TimeToOrigin
+         FairPriceToDestination = price > TimeToDestination
+         PriceBetterThanCost = FairPriceToDestination and FiniteTimeToDestination
+         FareExpiryInFuture = self._maxFareWait > self._world.simTime-time
+         EnoughTimeToReachFare = self._maxFareWait-self._world.simTime+time > TimeToOrigin
+         SufficientDrivingTime = FiniteTimeToOrigin and EnoughTimeToReachFare 
+         WillArriveOnTime = FareExpiryInFuture and SufficientDrivingTime
+         NotCurrentlyBooked = NoCurrentPassengers and NoAllocatedFares
+         CloseEnough = CanAffordToDrive and WillArriveOnTime
+         Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
+         Bid = CloseEnough and Worthwhile
+         if self.number == 100:
+            print(f"Taxi 100 Bid: passen={self._passenger}, fares={NotCurrentlyBooked}, account={CloseEnough}")
 
+         return Bid
+
+      def _weighedTrafficTime(self, origin, destination):
+         TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]), self._world.getNode(destination[0], destination[1]))
+         taxiPath = self._planPath(origin, destination)
+         addedTime = 0
+         for node in taxiPath:
+            coord = self._world.getNode(node[0], node[1])
+            addedTime += coord._traffic
+         return TimeToDestination + addedTime
+
+      def _bidOnFare1(self, time, origin, destination, price):
+         NoCurrentPassengers = self._passenger is None
+         NoAllocatedFares = len([fare for fare in self._availableFares.values() if fare.allocated]) == 0
+         TimeToOrigin = self._weighedTrafficTime(self.currentLocation, origin)
+         TimeToDestination = self._weighedTrafficTime(origin, destination)
+         #TimeToOrigin2 = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
+         #TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
+         #                                            self._world.getNode(destination[0], destination[1]))
+         FiniteTimeToOrigin = TimeToOrigin > 0
+         FiniteTimeToDestination = TimeToDestination > 0
+         CanAffordToDrive = self._account > TimeToOrigin
+         FairPriceToDestination = price > TimeToDestination
+         PriceBetterThanCost = FairPriceToDestination and FiniteTimeToDestination
+         FareExpiryInFuture = self._maxFareWait > self._world.simTime-time
+         EnoughTimeToReachFare = self._maxFareWait-self._world.simTime+time > TimeToOrigin
+         SufficientDrivingTime = FiniteTimeToOrigin and EnoughTimeToReachFare 
+         WillArriveOnTime = FareExpiryInFuture and SufficientDrivingTime
+         NotCurrentlyBooked = NoCurrentPassengers and NoAllocatedFares
+         CloseEnough = CanAffordToDrive and WillArriveOnTime
+         Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
+         Bid = CloseEnough and Worthwhile
+         if self.number == 100:
+            print(self._passenger)
+
+         return Bid
 
