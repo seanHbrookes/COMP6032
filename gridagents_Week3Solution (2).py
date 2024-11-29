@@ -1,8 +1,6 @@
 import math
 import numpy
 import uuid
-import copy
-import CSP
 
 # base class for all objects that can be in a GridWorld. Not much here other than
 # the world of which they are a part and their x-y coordinates in the world (which may
@@ -136,16 +134,12 @@ class GridAgent(GridObject):
              # if the path reached the presumed destination but there was nothing to tag,
              # we must have gone astray, and a new path to the goal can be planned.
              if self._currentAction.actionCode == self._currentAction.tag:
-                # self._curPath = None
-                nowAt = (self.x, self.y)
+                self._curPath = None
                 if result is None:
-                   self._curPath = None
                    return
                 if result.__class__.__name__ != "GridTarget":
                    raise ValueError("Expected a GridTarget class for a Move action, got a {0} class instead".format(result.__class__.__name__))
-                if nowAt not in self._goals:
-                   raise ValueError("Target somehow tagged at a different location {0} from any actual goal {1}".format(nowAt, self._goals))
-                self._goals.remove(nowAt)
+                self._goals.pop(0)
           
       # this is the main function that generates intelligent behaviour. It implements
       # a 'policy': a mapping from the state (which you can get from the world, your x, y
@@ -166,31 +160,13 @@ class GridAgent(GridObject):
              # no path, so create a new one
              while self._curPath is None and len(self._goals) > 0:
 
+                # TODO
                 # ----- Choose which search method you are using with these lines -------
                    
                 #self._curPath = self._iterativeDeepeningSearch(currentLoc,self._goals[0])
                 #self._curPath = self._breadthFirstSearch(currentLoc,self._goals[0])
-                #self._curPath = self._AStarSearch(currentLoc, self._goals[0])
+                self._curPath = self._AStarSearch(currentLoc, self._goals[0])
 
-                # TODO
-                # ----- select the constraint functions and call constrained search -------
-                # the CSP definition (vars, domains, constraints) will be set up as a list of variables
-                # with domains, and a list of constraint generator functions
-                # domains are tuples of (t, x, y) values indicating the timestep, x, and y position of the agent respectively. 
-                self._curPath = [currentLoc]
-                # we start with just the start point (current location of the agent) The start
-                # point has a fixed assignment; 
-                cspVars = [CSP.CSPNode('start',((0,currentLoc[0],currentLoc[1]),))]
-                cspVars[0].setFixedValue((0,currentLoc[0],currentLoc[1]))                           
-                # key constraints:
-                # A: Each point is reachable from the other by at least the time in Manhattan (x+y) distance units.
-                # B: No point is visited more than once
-                # C: 2 points cannot be occupied at the same time.
-                constraints = [lambda p, q: abs(p[1]-q[1])+abs(p[2]-q[2]) <= abs(p[0] - q[0]) and
-                               (p[1],p[2]) != (q[1],q[2]) and p[0] != q[0]]
-                while (self._curPath is not None and
-                       len([node for node in self._goals if node in self._curPath]) != len(self._goals)):
-                      self._curPath = self._constrainedSearch(cspVars, constraints)
                 
                 # could have an unreachable goal, which we just remove
                 if self._curPath is None:
@@ -203,16 +179,17 @@ class GridAgent(GridObject):
              # waypoints to the next goal
              if self._curPath[0] == currentLoc:
                 self._curPath.pop(0)
-             # at a goal point? 
-             if currentLoc in self._goals:
-                objectToTag = None
-                try:
-                    # is this a taggable goal? If so, tag it.
-                    objectToTag = next(occ for occ in occupants if occ.objectName == "target")
-                    GridObject.__setattr__(self, "_currentAction",Action(self, Action.tag, objectToTag,0))
-                    return self._currentAction
-                except StopIteration:
-                    pass
+             # at a goal point? Current path will be empty
+             if len(self._curPath) == 0:
+                if currentLoc == self._goals[0]:
+                   objectToTag = None
+                   try:
+                       # is this a taggable goal? If so, tag it.
+                       objectToTag = next(occ for occ in occupants if occ.objectName == "target")
+                       GridObject.__setattr__(self, "_currentAction",Action(self, Action.tag, objectToTag,0))
+                       return self._currentAction
+                   except StopIteration:
+                       pass
              else:
                # not at the goal point. Continue to move towards the next waypoint.
                GridObject.__setattr__(self,"_currentAction",Action(self,Action.move, None, self._getDirection(self._curPath[0])))
@@ -330,9 +307,13 @@ class GridAgent(GridObject):
              return None
           return nextTgt
 
+      # TODO
+      # -------------- These are the methods you need to implement for the Week 2 practical --------
+
       # all these searches take a start point and a target, and return a path list ordered from start
       # to target, of the nodes the agent should traverse to reach the target
 
+      # TODO
       # breadth-first search should expand each location completely before moving to the next. In the
       # gridworld, this isn't crippling, the branching factor is only 4, but consider how the problem
       # would scale to a 100*100 grid (!)
@@ -363,6 +344,7 @@ class GridAgent(GridObject):
                    path.update(expansion)
           return None
 
+      # TODO
       # depth-first search expands each branch. This is most efficiently done recursively, and
       # by using a ply argument, we can trivially implement iterative deepening. An explored
       # parameter - a list of expanded nodes - makes sure we can't end up in endless loops
@@ -387,7 +369,8 @@ class GridAgent(GridObject):
           if bottomedOut:
              return []
           return None
-                  
+       
+      # TODO           
       # here is the extension to iterative deepening
       def _iterativeDeepeningSearch(self, start, target):
           ply = 1
@@ -397,6 +380,7 @@ class GridAgent(GridObject):
                 ply += 1
           return foundPath
 
+      # TODO
       # A* search is an informed search, and expects a heuristic, which should be a
       # function of 2 variables, both tuples, the start, and the target.
       def _AStarSearch(self, start, target, heuristic=None):
@@ -432,146 +416,7 @@ class GridAgent(GridObject):
                             expanded[estimatedDistance][expTgt[0]] = nextNode[1]+[expTgt[0]]
                          else:
                             expanded[estimatedDistance] = {expTgt[0]: nextNode[1]+[expTgt[0]]}
-          return None
-
-      # TODO
-      # -------------- These are the methods you need to implement for the Week 4 practical --------         
-
-      # TODO
-      # --------------------------------- implement AC-3 inference ---------------------------------
-      """
-      AC-3 inference looks at binary edges (between pairs of nodes) and checks consistency: that is, 
-      if there is *some* value in the domain of each variable that will allow the other variable to
-      be satisfied. The edge (arc) is consistent if this is true, and the entire graph is consistent
-      if there are no arcs that cannot be made consistent. Values for each variable that prevent the
-      other from being satisfied no matter what, are pruned away. The basic algorithm is: 
-      
-      Start with a queue (a Python list) of all the edges you want to consider.
-      Choose an edge and assign a value to one of its endpoints (choice of value to assign is arbitrary)
-      Test if there is a value in the legal domain of the other endpoint that will satisfy the
-      constraint on the edge.
-      If not: prune the value from the domain of the first variable (whose value you set).
-              and add all related constraints - those that include the first variable in their endpoints,
-              onto the back of the queue of edges.
-      If any variable has its domain reduced to zero, fail absolutely - the graph is not satisfiable. 
-
-      AC-3 can also be applied to subgraphs of the complete problem graph - so you can test e.g. consistency
-      for a single variable or a specific group; it is merely a matter of which edges you bring in at the
-      start. Hence the edges parameter to the function - this lets you set up which subgraph you want
-      to consider. The basenode argument can be used to specify a comparison node - it will become the
-      'other' endpoint (whose domain is not pruned) in the AC-3 computation.
-      """
-      def _AC_3Inference(self, edges, basenode=None):
-
-          print("Running AC-3 inference")
-          toConsider = list(range(len(edges))) # initialise AC-3 with all edges
-          considered = []                      # considered are the edges already evaluated
-
-          while len(toConsider) > 0:
-                # get the next constraint, iterating through the list to consider
-                nextEdge = toConsider.pop()
-                bIdx = 0 if basenode is not None and edges[nextEdge].endPoints.index(basenode) == 0 else 1
-                cIdx = 1 if bIdx == 0 else 0
-                # revise constraints according to AC-3 based on what we find
-                if edges[nextEdge].reviseConstraint(edges[nextEdge].endPoints[cIdx]):
-                   if edges[nextEdge].endPoints[cIdx].numLegal == 0:
-                      return False # absolute failure. We can abort on inference
-                   # add any constraints that may need updating to the list
-                   reconsider = [r for r in considered if edges[r].endPoints[bIdx] == edges[nextEdge].endPoints[cIdx] and edges[r].endPoints[cIdx] != edges[nextEdge].endPoints[bIdx]]
-                   toConsider += reconsider
-                considered.append(nextEdge)
-                
-          return True # AC-3 completed and a solution still may exist.
-
-      # TODO
-      # ------------------- implement backtracking search -------------------------------------
-      """
-      backtracking search tries each variable looking for a solution. If constraints fail at any
-      depth, it tries again with a new value at the last failure point. This can be implemented
-      with a minimum-remaining-values heuristic by interrogating each node's numLegal value and
-      using this to index into a dictionary of remaining variables sorted by legal value count.
-      Take a look at the Sudoku solution for the idea. The 'unset' dictionary below gives you
-      the basic structure needed.
-      """
-      def _depthLimitedBacktrackingSearch(self, nodes):
-
-          print ("Running backtracking search at depth {0}".format(len(nodes)))
-          # get variables still to set after inferences
-          unset = dict([((n.numLegal, n.name), n) for n in nodes if n.value is None])
-          # solved. Return with success
-          if len(unset) == 0:
-             return True
-
-          nextPoint = min(unset.keys()) # MRV heuristic sets the variable with the fewest valid values
-          print("Number of values for variable {0}:{1}".format(unset[nextPoint].name,unset[nextPoint].numLegal))
-          values = copy.deepcopy(unset[nextPoint].legalValues)
-          for value in values:
-          # for value in unset[nextPoint].legalValues:
-              print("Trying value {0} for variable{1}".format(value, unset[nextPoint].name))
-              # print("Legal values are {0}".format(unset[nextPoint].legalValues))
-              if unset[nextPoint].setValue(value):
-                 if self._AC_3Inference(unset[nextPoint]._constrainedBy, basenode=unset[nextPoint]) and self._depthLimitedBacktrackingSearch(nodes):
-                    return True
-                 unset[nextPoint].clearValue()
-                 
-          # no values can satisfy this variable. Fail (at this level)
-          print("Failure for variable {0} at depth {1}".format(unset[nextPoint].name,len(nodes)))
-          return False
-        
-      # this function is wrapper around depthLimitedBacktrackingSearch that calls it iteratively
-      # with expanded variable sets until the constraints are satisfied or the map has been exhausted
-      def _constrainedSearch(self, nodes, constraints):
-
-          path = None
-          # convenient to extract the fixed waypoint positions here.
-          waypoints = [(n.value[1], n.value[2]) for n in nodes if n.value is not None]
-          numNodes = len(nodes)+len(self._goals) # initial number of nodes: fixed waypoints plus targets
-          
-          # note: need to deep copy here because each call to the depth-limited search will change
-          # value assignments, etc. for nodes, and we want each pass of constrained search to start
-          # 'fresh' - that is, with the unmodified nodes as they were initialised, before constraints
-          # and values were applied.
-          testNodes = copy.deepcopy(nodes)         
-          
-          while path is None and numNodes < len(self._map):
-                print("Trying backtracking search at depth {0}".format(numNodes))
-                # insert the targets, which have fixed domain for (x,y) but time can be any nonzero value.
-                # have to do this within the loop because the domain needs to be reset for time in each pass
-                testNodes += [CSP.CSPNode('goal{0}{1}'.format(self._goals[g][0],self._goals[g][1]),
-                                          tuple([(t, self._goals[g][0], self._goals[g][1]) for t in range(1,numNodes)]))
-                              for g in range(len(self._goals))]
-
-                # generate all the edges by iterating through node pairs and applying constraints
-                # be sure to test and reject self-edges (same node on both sides of the constraint)!
-                testEdges = [CSP.CSPEdge(P, Q, T) for P in testNodes for Q in testNodes for T in constraints if P.name < Q.name]
-
-                # perform AC-3 inference to reduce the search space, then call constrained search
-                # lazy evaluation means if AC-3 fails, the call to backtracking search will never happen.
-                if self._AC_3Inference(testEdges) and self._depthLimitedBacktrackingSearch(testNodes):
-                # if self._depthLimitedBacktrackingSearch(testNodes):
-                   # success! We have a path. Put the nodes in time order.
-                   sequence = [node.value for node in testNodes]
-                   sequence.sort() # Python bug? sort() directly applied on a list comprehension initialiser results in None.
-                   print("Complete path: {0}".format(sequence))
-                   path = [(s[1], s[2]) for s in sequence] # output the path as the list of points only
-                else:
-                   # search failed.
-                   numNodes += 1                       # add another node
-                   if numNodes < len(self._map):       # avoid further generation if we are bound to fail
-                      testNodes = copy.deepcopy(nodes) # Restore the original fixed waypoints
-                   
-                   # generate all the intermediate nodes
-                   # this version also eliminates waypoints and goals from the list of possibles, but these would in any
-                   # case be pruned during constraint satisfaction, so there should be no problem if this initial pruning
-                   # is not done.
-                      testNodes += [CSP.CSPNode('move{0}'.format(i),
-                                                tuple([(t, m[0], m[1]) for t in range(1,numNodes)
-                                                                       for m in self._map
-                                                                       if m not in waypoints
-                                                                       and m not in self._goals]))
-                                    for i in range(numNodes-len(nodes)-len(self._goals))]
-                   
-          return path           
+          return None            
                  
                  
                                         

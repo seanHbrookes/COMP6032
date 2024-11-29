@@ -18,7 +18,7 @@ import dispatcher
 # basic parameters
 worldX = 50
 worldY = 50
-runTime = 500
+runTime = 1000
 # you can change the DisplaySize to be bigger if you want larger-size objects on-screen
 displaySize = (1024,768)
 trafficOn = True
@@ -158,13 +158,20 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
 
    # create some taxis
    print("Creating taxis")
-   taxi0 = taxi.Taxi(world=svcArea,taxi_num=100,service_area=svcMap,start_point=(0,0))
+   taxi0 = taxi.Taxi(world=svcArea,taxi_num=100,service_area=svcMap,start_point=(20,0))
    taxi1 = taxi.Taxi(world=svcArea,taxi_num=101,service_area=svcMap,start_point=(49,15))
    taxi2 = taxi.Taxi(world=svcArea,taxi_num=102,service_area=svcMap,start_point=(15,49))
-   taxi3 = taxi.Taxi(world=svcArea,taxi_num=103,service_area=svcMap,start_point=(0,49))
+   taxi3 = taxi.Taxi(world=svcArea,taxi_num=103,service_area=svcMap,start_point=(0,35))
 
-   global taxis 
    taxis = [taxi0,taxi1,taxi2,taxi3]
+
+   taxiRev = {
+      "100": [0, None],
+      "101": [0, None],
+      "102": [0, None],
+      "103": [0, None]
+   }
+   prevOrigin = None
 
    # and a dispatcher
    print("Adding a dispatcher")
@@ -183,6 +190,7 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
    print("Starting world")
    taxiTimes = [0, 0, 0, 0]
    while threadTime < threadRunTime:
+
          # exit if 'q' has been pressed
          if stop.is_set():
             threadRunTime = 0
@@ -193,23 +201,20 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
             for i in range(len(taxis)):
                if taxis[i].onDuty == False and taxiTimes[i] == 0:
                   taxiTimes[i] = threadTime
-                  #print(taxiTimes[i])
-                  
-            time.sleep(1)
+            for taxin in taxis:
+               if taxin._passenger != None and taxiRev[str(taxin.number)][1] != taxin._passenger._origin:
+                  taxiRev[str(taxin.number)][1] = taxin._passenger._origin
+                  print("num", taxin.number, "added", taxin._passenger._price)
+                  taxiRev[str(taxin.number)][0] += taxin._passenger._price
+            time.sleep(0.001)
    if threadTime == runTime:
-       totalRev = 0
-       dispatchRev = dispatcher0.getTotalRev()
-       print("Total dispatcher revenue: ", "£",dispatchRev)
-       totalTaxiRev = 0
-       for taxinum in taxis:
-                 totalRev += taxinum._account
-                 totalTaxiRev += taxinum._account
-                 print("Taxi ", taxinum.number, ": ", "£", taxinum._account)
-       totalRev += dispatchRev
-       print("Total operation revenue: ", "£",totalRev)
-       for i in range(len(taxis)):
-         print("Time ","Taxi ", taxis[i].number, "finished:", taxiTimes[i])
 
+      print("Total dispatcher revenue: ", "£",dispatcher0._revenue)
+      for x, y in taxiRev.items():
+         print("Taxi", x, ":", "£", y[0])
+
+      for i in range(len(taxis)):
+         print("Time ","Taxi ", taxis[i].number, "finished:", taxiTimes[i])
 # event to manage a user exit, invoked by pressing 'q' on the keyboard
 userExit = threading.Event()
 
@@ -305,9 +310,8 @@ curTime = 0
 # start the simulation (which will automatically stop at the end of the run time)
 roboUber.start()
 
-
 # this is the display loop which updates the on-screen output.
-while curTime <= runTime:
+while curTime < runTime:
 
       # you can end the simulation by pressing 'q'. This triggers an event which is also passed into the world loop
       try:
@@ -388,4 +392,10 @@ while curTime <= runTime:
 
              # advance the time                           
              curTime += 1
-            
+
+
+
+
+
+
+      
