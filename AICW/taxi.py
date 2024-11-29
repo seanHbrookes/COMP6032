@@ -416,6 +416,9 @@ class Taxi:
                               expanded[estimatedDistance] = {expTgt[0]: nextNode[1]+[expTgt[0]]}
             return None            
                  
+
+
+
       # Old a star
       def _planPath4(self, origin, destination, **args):
          unexplored = []
@@ -453,8 +456,8 @@ class Taxi:
 
          return []
 
-      def _heuristic(self, node, destination):
-         return abs(node[0] - destination[0]) + abs(node[1] - destination[1])
+      #def _heuristic(self, node, destination):
+      #   return abs(node[0] - destination[0]) + abs(node[1] - destination[1])
       
 
       #Test other kinds of search algorithms in final report

@@ -171,7 +171,6 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
       "102": [0, None],
       "103": [0, None]
    }
-   prevOrigin = None
 
    # and a dispatcher
    print("Adding a dispatcher")

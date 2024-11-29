@@ -200,6 +200,7 @@ class Dispatcher:
              return 150
           return (25+timeToDestination)/0.9
 
+      #new
       def _costFare(self, fare):
          timeToDestination = self._parent.travelTime(self._parent.getNode(fare.origin[0],fare.origin[1]),
                                                       self._parent.getNode(fare.destination[0],fare.destination[1]))
