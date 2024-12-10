@@ -334,7 +334,94 @@ class Taxi:
       # journey. Below is a naive depth-first search implementation. You should be able
       # to do much better than this!
 
-      def _planPath(self, origin, destination, **args):
+      #Original
+      def _planPath2(self, origin, destination, **args):
+               # the list of explored paths. Recursive invocations pass in explored as a parameter
+               if 'explored' not in args:
+                  args['explored'] = {}
+               # add this origin to the explored list
+               # explored is a dict purely so we can hash its index for fast lookup, so its value doesn't matter
+               args['explored'][origin] = None 
+               # the actual path we are going to generate
+               path = [origin]
+               # take the next node in the frontier, and expand it depth-wise               
+               if origin in self._map:
+                  # the frontier of unexplored paths (from this Node
+                  frontier = [node for node in self._map[origin].keys() if node not in args['explored']]
+                  # recurse down to the next node. This will automatically create a depth-first
+                  # approach because the recursion won't bottom out until no more frontier nodes
+                  # can be generated 
+                  for nextNode in frontier:
+                     path = path + self._planPath(nextNode, destination, explored=args['explored'])
+                     # stop early as soon as the destination has been found by any route.
+                     if destination in path:
+                        # validate path
+                        if len(path) > 1:
+                           try:
+                                 # use a generator expression to find any invalid nodes in the path
+                                 badNode = next(pnode for pnode in path[1:] if pnode not in self._map[path[path.index(pnode)-1]].keys())
+                                 raise IndexError("Invalid path: no route from ({0},{1}) to ({2},{3} in map".format(self._map[path.index(pnode)-1][0], self._map[path.index(pnode)-1][1], pnode[0], pnode[1]))
+                           except StopIteration:
+                                 pass
+                        return path
+               # didn't reach the destination from any reachable node
+               # no need, therefore, to expand the path for the higher-level call, this is a dead end.
+               return [] 
+      
+      #algorithm changed to use chebyshev distance instead of euclidean distance as its better for grids with diagonal movements
+
+      #Best a star
+      def _planPath(self, origin, destination, heuristic=None):
+            if origin not in self._map:
+               return None
+            if origin == destination:
+               return [origin]
+            
+            #euclidean
+            #if heuristic is None: heuristic = lambda x, y: math.sqrt((x[0]-y[0])**2+(x[1]-y[1])**2)
+
+            #chebyshev
+            if heuristic is None: heuristic = lambda x, y: max(abs(x[0] - y[0]), abs(x[1] - y[1]))
+
+            # Nodes that have been fully explored
+            explored = set()
+            #nodes to be explored sorted by cost
+            expanded = {heuristic(origin, destination): {origin: [origin]}}
+            while len(expanded) > 0:
+                  bestPath = min(expanded.keys())
+                  nextExpansion = expanded[bestPath]
+
+                  if destination in nextExpansion:
+                     return nextExpansion[destination]
+                  
+                  nextNode = nextExpansion.popitem()
+
+                  while len(nextExpansion) > 0 and nextNode[0] in explored:
+                        nextNode = nextExpansion.popitem()
+
+                  if len(nextExpansion) == 0:
+                     del expanded[bestPath]
+
+                  if nextNode[0] not in explored:
+                     explored.add(nextNode[0])
+                     expansionTargets = [node for node in self._map[nextNode[0]].items() if node[0] not in explored]
+
+                     while len(expansionTargets) > 0:
+                           expTgt = expansionTargets.pop()
+                           estimatedDistance = bestPath-heuristic(nextNode[0],destination)+expTgt[1][0]+heuristic(expTgt[0],destination)
+
+                           if estimatedDistance in expanded:             
+                              expanded[estimatedDistance][expTgt[0]] = nextNode[1]+[expTgt[0]]
+
+                           else:
+                              expanded[estimatedDistance] = {expTgt[0]: nextNode[1]+[expTgt[0]]}
+            return None            
+                 
+
+
+
+      # Old a star
+      def _planPath4(self, origin, destination, **args):
          unexplored = []
          # put the origin into nodes to explore with score of 0
          heapq.heappush(unexplored, (0, origin))
@@ -367,92 +454,16 @@ class Taxi:
                   # put neighbour into  unexplored
                   fScore = weighedGScore + self._heuristic(neighbour, destination)
                   heapq.heappush(unexplored, (fScore, neighbour))
+
          return []
 
-      def _heuristic(self, node, destination):
-         return abs(node[0] - destination[0]) + abs(node[1] - destination[1])
-         return None
-
+      #def _heuristic(self, node, destination):
+      #   return abs(node[0] - destination[0]) + abs(node[1] - destination[1])
       
-      def _planPath3(self, origin, destination, heuristic=None, **args):
-         if 'explored' not in args:
-            args['explored'] = {}
-         if origin not in self._map:
-            print(f"Invalid origin: {origin}")
-            return None
-         args['explored'][origin] = True
-         
-         if heuristic is None: heuristic = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[1])
 
-         expanded = {heuristic(origin, destination): {origin: [origin]}}
-
-         while len(expanded) > 0:
-            bestPath = min(expanded.keys())
-            nextExpansion = expanded[bestPath]
-
-            if destination in nextExpansion:
-               self.path = nextExpansion[destination]
-               return self.path
-
-            nextNode = nextExpansion.popitem()
-
-            while len(nextExpansion) > 0 and nextNode[0] in args['explored']:
-               nextNode = nextExpansion.popitem()
-
-            if len(nextExpansion) == 0:
-               del expanded[bestPath]
-
-            if nextNode[0] not in args['explored']:
-               args['explored'][nextNode[0]] = True
-               expansionTargets = [node for node in self._map[nextNode[0]].items() if node[0] not in args['explored']]
-               
-               while len(expansionTargets) > 0:
-                  expDes = expansionTargets.pop()
-                  estimatedDistance = (bestPath + expDes[1] + heuristic(expDes[0], destination))
-                  #estimatedDistance = bestPath-heuristic(nextNode[0],destination)+expDes[1]+heuristic(expDes[0],destination)
-                  
-                  if estimatedDistance in expanded:
-                     expanded[estimatedDistance][expDes[0]] = nextNode[1]+[expDes[0]]
-                  else:
-                     expanded[estimatedDistance] = {expDes[0]: nextNode[1]+[expDes[0]]}
-
-         return None
+      #Test other kinds of search algorithms in final report
 
 
-
-
-      def _planPath2(self, origin, destination, **args):
-          # the list of explored paths. Recursive invocations pass in explored as a parameter
-          if 'explored' not in args:
-             args['explored'] = {}
-          # add this origin to the explored list
-          # explored is a dict purely so we can hash its index for fast lookup, so its value doesn't matter
-          args['explored'][origin] = None 
-          # the actual path we are going to generate
-          path = [origin]
-          # take the next node in the frontier, and expand it depth-wise               
-          if origin in self._map:
-             # the frontier of unexplored paths (from this Node
-             frontier = [node for node in self._map[origin].keys() if node not in args['explored']]
-             # recurse down to the next node. This will automatically create a depth-first
-             # approach because the recursion won't bottom out until no more frontier nodes
-             # can be generated 
-             for nextNode in frontier:
-                 path = path + self._planPath(nextNode, destination, explored=args['explored'])
-                 # stop early as soon as the destination has been found by any route.
-                 if destination in path:
-                    # validate path
-                    if len(path) > 1:
-                       try:
-                           # use a generator expression to find any invalid nodes in the path
-                           badNode = next(pnode for pnode in path[1:] if pnode not in self._map[path[path.index(pnode)-1]].keys())
-                           raise IndexError("Invalid path: no route from ({0},{1}) to ({2},{3} in map".format(self._map[path.index(pnode)-1][0], self._map[path.index(pnode)-1][1], pnode[0], pnode[1]))
-                       except StopIteration:
-                           pass
-                    return path
-          # didn't reach the destination from any reachable node
-          # no need, therefore, to expand the path for the higher-level call, this is a dead end.
-          return [] 
                 
       # TODO
       # this function decides whether to offer a bid for a fare. In general you can consider your current position, time,
@@ -460,25 +471,86 @@ class Taxi:
       # may seem relevant to decide whether to bid. The (crude) constraint-satisfaction method below is only intended as
       # a hint that maybe some form of CSP solver with automated reasoning might be a good way of implementing this. But
       # other methodologies could work well. For best results you will almost certainly need to use probabilistic reasoning.
+      #Original
+      def _bidOnFare2(self, time, origin, destination, price):
+         NoCurrentPassengers = self._passenger is None
+         NoAllocatedFares = len([fare for fare in self._availableFares.values() if fare.allocated]) == 0
+         TimeToOrigin = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
+         TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
+                                                      self._world.getNode(destination[0], destination[1]))
+         
+         #check if the fare will be cancelled
+         FiniteTimeToOrigin = TimeToOrigin > 0
+         FiniteTimeToDestination = TimeToDestination > 0
+         CanAffordToDrive = self._account > TimeToOrigin
+         FairPriceToDestination = price > TimeToDestination
+         PriceBetterThanCost = FairPriceToDestination and FiniteTimeToDestination
+         FareExpiryInFuture = self._maxFareWait > self._world.simTime-time
+         EnoughTimeToReachFare = self._maxFareWait-self._world.simTime+time > TimeToOrigin
+         SufficientDrivingTime = FiniteTimeToOrigin and EnoughTimeToReachFare 
+         WillArriveOnTime = FareExpiryInFuture and SufficientDrivingTime
+         NotCurrentlyBooked = NoCurrentPassengers and NoAllocatedFares
+         CloseEnough = CanAffordToDrive and WillArriveOnTime
+         Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
+         Bid = CloseEnough and Worthwhile
+         #if self.number == 100:
+         #   print(f"Taxi 100 Bid: account={self._account}, account={self._availableFares}, account={self._nextLoc}")
+
+         return Bid
+
+   
+
       def _bidOnFare(self, time, origin, destination, price):
-          NoCurrentPassengers = self._passenger is None
-          NoAllocatedFares = len([fare for fare in self._availableFares.values() if fare.allocated]) == 0
-          TimeToOrigin = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
-          TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
-                                                     self._world.getNode(destination[1], destination[1]))
-          FiniteTimeToOrigin = TimeToOrigin > 0
-          FiniteTimeToDestination = TimeToDestination > 0
-          CanAffordToDrive = self._account > TimeToOrigin
-          FairPriceToDestination = price > TimeToDestination
-          PriceBetterThanCost = FairPriceToDestination and FiniteTimeToDestination
-          FareExpiryInFuture = self._maxFareWait > self._world.simTime-time
-          EnoughTimeToReachFare = self._maxFareWait-self._world.simTime+time > TimeToOrigin
-          SufficientDrivingTime = FiniteTimeToOrigin and EnoughTimeToReachFare 
-          WillArriveOnTime = FareExpiryInFuture and SufficientDrivingTime
-          NotCurrentlyBooked = NoCurrentPassengers and NoAllocatedFares
-          CloseEnough = CanAffordToDrive and WillArriveOnTime
-          Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
-          Bid = CloseEnough and Worthwhile
-          return Bid
+         #check if taxi has passenger and no fares allocated
+         NoCurrentPassengers = self._passenger is None
+         NoAllocatedFares = len([fare for fare in self._availableFares.values() if fare.allocated]) == 0
+         NotCurrentlyBooked = NoCurrentPassengers and NoAllocatedFares
+
+         #get the time to the fare and add a traffic safety probability
+         TrafficSafety = 1 + (self._trafficTime(origin, destination) / 10)
+         TimeToOrigin = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
+         TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
+                                                      self._world.getNode(destination[0], destination[1]))         
+         ToOriginTraffic = TimeToOrigin * TrafficSafety
+         ToDestinationTraffic = TimeToDestination * TrafficSafety
+         #
+         FiniteTimeToOrigin = TimeToOrigin > 0
+         FiniteTimeToDestination = TimeToDestination > 0
 
 
+         ExpiryTime = self._maxFareWait - (self._world.simTime - time)
+         WillArriveOnTime = ExpiryTime > ToOriginTraffic
+         CanAffordToDrive = self._account > ToOriginTraffic
+
+         # Exponential decay for probability
+         ProbOnTime = math.exp(-ToOriginTraffic / ExpiryTime) if WillArriveOnTime else 0.0
+         ProbOnTime = max(0.0, min(ProbOnTime, 1.0))
+
+
+         #get the expected profit from fare
+         ExptCost = ToOriginTraffic + ToDestinationTraffic
+         ExptProfit = price - ExptCost
+
+         #multiply by the probability its on time
+         ExptReturn = ExptProfit * ProbOnTime
+         #minimum that the exptreturn has to be adjusted after testing
+         MinReturn = 5
+         MakesProfit = ExptReturn > MinReturn
+         Worthwhile = MakesProfit and CanAffordToDrive and FiniteTimeToDestination and FiniteTimeToOrigin and NotCurrentlyBooked
+         #furthest a fare can be to pickup adjusted after testing
+         MaxDistance = self._maxFareWait - (self._world.simTime - time)
+         CloseEnough = MaxDistance > ToOriginTraffic
+         Bid = CloseEnough and Worthwhile
+
+         return Bid
+      
+      
+      #gets amount of traffic between 
+      def _trafficTime(self, origin, destination):
+         taxiPath = self._planPath(origin, destination)
+         addedTime = 0
+         for node in taxiPath:
+            coord = self._world.getNode(node[0], node[1])
+            addedTime += coord._traffic
+         return addedTime
+      
