@@ -253,12 +253,10 @@ class Dispatcher:
                                  self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
       
 
-      #Check the distance between taxi and fare and distance between fare and dropoff
-      #check if taxi is free and on duty
-      #check if the time to get there is is longer than the max wawit for a fare
-      #check if the taxi has enough money to make it
-      #make a score based on time for each taxi in loop that qualifies
-      #quickest one gets the fare
+      
+      
+      
+
       
       #New allocate fare
       def _allocateFare(self, origin, destination, time):
@@ -268,21 +266,26 @@ class Dispatcher:
 
          if fareNode is not None:
             for taxiId in self._fareBoard[origin][destination][time].bidders:
+               #check if taxi is free and on duty
                if not self._taxis[taxiId].onDuty:
                   continue
-
+         
+               #Check the distance between taxi and fare and distance between fare and dropoff
                timeToFare = self._parent.travelTime(self._parent.getNode(self._taxis[taxiId].currentLocation[0], self._taxis[taxiId].currentLocation[1]), self._parent.getNode(origin[0], origin[1]))
                timeToDestination = self._parent.travelTime(self._parent.getNode(origin[0], origin[1]), self._parent.getNode(destination[0], destination[1]))
 
+               #check if the time to get there is is longer than the max wawit for a fare
+               #check if the taxi has enough money to make it
                if timeToFare > self._taxis[taxiId]._maxFareWait or self._taxis[taxiId]._account < timeToDestination:
                   continue
                
                
-
+               #make a score based on time for each taxi in loop that qualifies
                score = timeToDestination + timeToFare
                #potentially add other weighinghs to the score
                #allocate to who would make the most profit
                if score < bestScore:
+                  #quickest one gets the fare
                   bestTaxi = taxiId
                   bestScore = score
 
