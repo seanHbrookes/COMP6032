@@ -545,7 +545,7 @@ class Taxi:
          return Bid
       
       
-      #gets amount of traffic between 
+      #gets amount of traffic between an origin point and a destination 
       def _trafficTime(self, origin, destination):
          taxiPath = self._planPath(origin, destination)
          addedTime = 0
