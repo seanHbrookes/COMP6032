@@ -165,6 +165,7 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
 
    taxis = [taxi0,taxi1,taxi2,taxi3]
 
+   #Taxi dict that monitors the taxi revenue and the origin of a fare in the taxi
    taxiRev = {
       "100": [0, None],
       "101": [0, None],
@@ -197,9 +198,11 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
             svcArea.runWorld(ticks=1, outputs=outputValues)
             if threadTime != svcArea.simTime:
                threadTime += 1
+            #this loops go through each taxi and record what time they go off duty
             for i in range(len(taxis)):
                if taxis[i].onDuty == False and taxiTimes[i] == 0:
                   taxiTimes[i] = threadTime
+            #this loop loops through each taxi and checks if the taxi has a passenger and will record its fare for each new passenger
             for taxin in taxis:
                if taxin._passenger != None and taxiRev[str(taxin.number)][1] != taxin._passenger._origin:
                   taxiRev[str(taxin.number)][1] = taxin._passenger._origin
