@@ -292,3 +292,7 @@ class Dispatcher:
                if bestTaxi:
                   self._fareBoard[origin][destination][time].taxi = bestTaxi
                   self._parent.allocateFare(origin,self._taxis[bestTaxi])
+
+                  #TODO list
+                  #update costfare
+                  #do tests with traffic off and compare in report
