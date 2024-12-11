@@ -499,7 +499,8 @@ class Taxi:
          return Bid
 
    
-
+      # CHange this to fix the bug
+      # write all the bugs down in the report
       def _bidOnFare(self, time, origin, destination, price):
          #check if taxi has passenger and no fares allocated
          NoCurrentPassengers = self._passenger is None
