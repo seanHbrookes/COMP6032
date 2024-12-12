@@ -282,17 +282,16 @@ class Dispatcher:
                
                #make a score based on time for each taxi in loop that qualifies
                score = timeToDestination + timeToFare
-               #potentially add other weighinghs to the score
+               
+               #add to score if the taxi has very low money
+               if self._taxis[taxiId]._account < 180:
+                  score -= 10
                #allocate to who would make the most profit
                if score < bestScore:
                   #quickest one gets the fare
                   bestTaxi = taxiId
                   bestScore = score
 
-               if bestTaxi:
+            if bestTaxi:
                   self._fareBoard[origin][destination][time].taxi = bestTaxi
                   self._parent.allocateFare(origin,self._taxis[bestTaxi])
-
-                  #TODO list
-                  #update costfare
-                  #do tests with traffic off and compare in report
