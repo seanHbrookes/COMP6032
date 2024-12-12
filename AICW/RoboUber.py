@@ -47,7 +47,7 @@ trafficSinkDrain = 4 if trafficOn else 0
 
 # some nodes - this can be automated
 jct0 = networld.junctionDef(x=0, y=0, cap=2, canStop=True, src=trafficSrcMinor, sink=trafficSinkMinor)
-jct1 = networld.junctionDef(x=20, y=0, cap=2, canStop=True, src=trafficSrcSignificant, sink=trafficSinkMinor)
+jct1 = networld.junctionDef(x=20, y=0, cap=2, canStop=True, src=trafficSrcMinor, sink=trafficSinkMinor)
 jct2 = networld.junctionDef(x=40, y=0, cap=2, canStop=True, src=trafficSrcMajor, sink=trafficSinkMajor)
 jct3 = networld.junctionDef(x=49, y=0, cap=2, canStop=True, src=trafficSrcMinor, sink=trafficSinkMinor)
 jct4 = networld.junctionDef(x=0, y=10, cap=2, canStop=True, src=trafficSrcSignificant, sink=trafficSinkMinor)

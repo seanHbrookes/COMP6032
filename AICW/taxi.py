@@ -514,7 +514,7 @@ class Taxi:
                                                       self._world.getNode(destination[0], destination[1]))         
          ToOriginTraffic = TimeToOrigin * TrafficSafety
          ToDestinationTraffic = TimeToDestination * TrafficSafety
-         #
+         
          FiniteTimeToOrigin = TimeToOrigin > 0
          FiniteTimeToDestination = TimeToDestination > 0
 
@@ -522,6 +522,7 @@ class Taxi:
          ExpiryTime = self._maxFareWait - (self._world.simTime - time)
          WillArriveOnTime = ExpiryTime > ToOriginTraffic
          CanAffordToDrive = self._account > ToOriginTraffic
+
 
          # Exponential decay for probability
          ProbOnTime = math.exp(-ToOriginTraffic / ExpiryTime) if WillArriveOnTime else 0.0
@@ -554,4 +555,7 @@ class Taxi:
             coord = self._world.getNode(node[0], node[1])
             addedTime += coord._traffic
          return addedTime
-      
+
+
+      #def _bidonFare3(self, time, origin, destination, price):
+          
