@@ -557,5 +557,5 @@ class Taxi:
          return addedTime
 
 
-      #def _bidonFare3(self, time, origin, destination, price):
-          
+      def _bidonFare3(self, time, origin, destination, price):
+         #create a point system instead that prioritises nearest taxis and ones that can make it on time also ones that have the least amount of money
